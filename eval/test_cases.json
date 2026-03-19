@@ -1,0 +1,222 @@
+[
+  {
+    "id": "tc001",
+    "phone": "+60100000001",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "What's the WiFi password?",
+    "language": "en",
+    "expected_contains": ["sky@2024"],
+    "expected_intent": "wifi"
+  },
+  {
+    "id": "tc002",
+    "phone": "+60100000002",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "Apakah kata laluan WiFi untuk unit saya?",
+    "language": "my",
+    "expected_contains": ["sky@2024"],
+    "expected_intent": "wifi"
+  },
+  {
+    "id": "tc003",
+    "phone": "+60100000003",
+    "building": "tower_b",
+    "unit": "5-01",
+    "state": "BOOKED",
+    "question": "请问WiFi密码是什么？",
+    "language": "zh",
+    "expected_contains": ["amp@5566"],
+    "expected_intent": "wifi"
+  },
+  {
+    "id": "tc004",
+    "phone": "+60100000004",
+    "building": "tower_b",
+    "unit": "5-01",
+    "state": "BOOKED",
+    "question": "Where is my parking bay?",
+    "language": "en",
+    "expected_contains": ["C-03"],
+    "expected_intent": "parking"
+  },
+  {
+    "id": "tc005",
+    "phone": "+60100000005",
+    "building": "tower_a",
+    "unit": "18-02",
+    "state": "BOOKED",
+    "question": "Di mana tempat letak kereta saya?",
+    "language": "my",
+    "expected_contains": ["A-05"],
+    "expected_intent": "parking"
+  },
+  {
+    "id": "tc006",
+    "phone": "+60100000006",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "What is the door access code to get into the unit?",
+    "language": "en",
+    "expected_contains": ["4521"],
+    "expected_intent": "checkin"
+  },
+  {
+    "id": "tc007",
+    "phone": "+60100000007",
+    "building": "tower_b",
+    "unit": "22-08",
+    "state": "BOOKED",
+    "question": "Berapa nombor kod untuk masuk ke dalam unit?",
+    "language": "my",
+    "expected_contains": ["3344"],
+    "expected_intent": "checkin"
+  },
+  {
+    "id": "tc008",
+    "phone": "+60100000008",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "What time is check-out?",
+    "language": "en",
+    "expected_contains": ["12:00"],
+    "expected_intent": "checkout"
+  },
+  {
+    "id": "tc009",
+    "phone": "+60100000009",
+    "building": "tower_b",
+    "unit": "5-01",
+    "state": "BOOKED",
+    "question": "Pukul berapa masa daftar keluar?",
+    "language": "my",
+    "expected_contains": ["12:00"],
+    "expected_intent": "checkout"
+  },
+  {
+    "id": "tc010",
+    "phone": "+60100000010",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "How many guests can stay in this unit?",
+    "language": "en",
+    "expected_contains": ["8"],
+    "expected_intent": "unit_info"
+  },
+  {
+    "id": "tc011",
+    "phone": "+60100000011",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "What is the price per night for this unit?",
+    "language": "en",
+    "expected_contains": ["350"],
+    "expected_intent": "unit_info"
+  },
+  {
+    "id": "tc012",
+    "phone": "+60100000012",
+    "building": "tower_b",
+    "unit": null,
+    "state": "PRE_BOOKING",
+    "question": "What amenities does Tower B have?",
+    "language": "en",
+    "expected_contains": ["rooftop"],
+    "expected_intent": "building_info"
+  },
+  {
+    "id": "tc013",
+    "phone": "+60100000013",
+    "building": "tower_b",
+    "unit": null,
+    "state": "PRE_BOOKING",
+    "question": "Is there a co-working space in Tower B?",
+    "language": "en",
+    "expected_contains": ["co-working"],
+    "expected_intent": "building_info"
+  },
+  {
+    "id": "tc014",
+    "phone": "+60100000014",
+    "building": null,
+    "unit": null,
+    "state": "PRE_BOOKING",
+    "question": "What are the house rules? Can I smoke inside?",
+    "language": "en",
+    "expected_contains": ["smoking"],
+    "expected_intent": "narrative"
+  },
+  {
+    "id": "tc015",
+    "phone": "+60100000015",
+    "building": null,
+    "unit": null,
+    "state": "PRE_BOOKING",
+    "question": "Are there quiet hours I should know about?",
+    "language": "en",
+    "expected_contains": ["quiet"],
+    "expected_intent": "narrative"
+  },
+  {
+    "id": "tc016",
+    "phone": "+60100000016",
+    "building": "tower_a",
+    "unit": "3-05",
+    "state": "BOOKED",
+    "question": "我想了解一下附近有什么好吃的地方？",
+    "language": "zh",
+    "expected_contains": [],
+    "expected_intent": "narrative"
+  },
+  {
+    "id": "tc017",
+    "phone": "+60100000017",
+    "building": null,
+    "unit": null,
+    "state": "UNKNOWN",
+    "question": "Hello! I'm looking to book a unit.",
+    "language": "en",
+    "expected_contains": [],
+    "expected_intent": "greeting"
+  },
+  {
+    "id": "tc018",
+    "phone": "+60100000018",
+    "building": null,
+    "unit": null,
+    "state": "UNKNOWN",
+    "question": "Helo, saya ingin bertanya tentang penginapan di sini.",
+    "language": "my",
+    "expected_contains": [],
+    "expected_intent": "greeting"
+  },
+  {
+    "id": "tc019",
+    "phone": "+60100000019",
+    "building": null,
+    "unit": null,
+    "state": "PRE_BOOKING",
+    "question": "Do you accept cryptocurrency payments?",
+    "language": "en",
+    "expected_contains": [],
+    "expected_intent": "other"
+  },
+  {
+    "id": "tc020",
+    "phone": "+60100000020",
+    "building": "tower_b",
+    "unit": "22-08",
+    "state": "BOOKED",
+    "question": "我的单位可以加床吗？额外费用是多少？",
+    "language": "zh",
+    "expected_contains": [],
+    "expected_intent": "unit_info"
+  }
+]
