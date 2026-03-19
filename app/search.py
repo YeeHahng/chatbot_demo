@@ -44,6 +44,9 @@ async def query_narrative(
     if top_k is None:
         top_k = settings.top_k_chunks
 
+    if _collection is None or _embedding_model is None:
+        return []
+
     # Get collection count first
     count = await asyncio.to_thread(_collection.count)
 

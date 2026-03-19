@@ -69,6 +69,8 @@ def run_benchmark(url: str, model: str | None, test_cases: list[dict]) -> None:
     print(f"Test cases: {len(test_cases)}")
     print("=" * 60)
 
+    seed_url = f"{url}/seed"
+
     with httpx.Client(timeout=30.0) as client:
         for case in test_cases:
             tc_id = case["id"]
@@ -78,6 +80,15 @@ def run_benchmark(url: str, model: str | None, test_cases: list[dict]) -> None:
             expected_intent = case.get("expected_intent", None)
 
             question_snippet = question[:50] + "..." if len(question) > 50 else question
+
+            # Pre-seed session state so BOOKED cases have building/unit context
+            if case.get("building") or case.get("unit") or case.get("state", "UNKNOWN") != "UNKNOWN":
+                client.post(seed_url, json={
+                    "phone": phone,
+                    "building": case.get("building"),
+                    "unit": case.get("unit"),
+                    "state": case.get("state", "UNKNOWN"),
+                })
 
             start = time.monotonic()
             try:

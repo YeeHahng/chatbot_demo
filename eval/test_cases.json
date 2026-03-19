@@ -17,7 +17,7 @@
     "unit": "3-05",
     "state": "BOOKED",
     "question": "Apakah kata laluan WiFi untuk unit saya?",
-    "language": "my",
+    "language": "ms",
     "expected_contains": ["sky@2024"],
     "expected_intent": "wifi"
   },
@@ -50,7 +50,7 @@
     "unit": "18-02",
     "state": "BOOKED",
     "question": "Di mana tempat letak kereta saya?",
-    "language": "my",
+    "language": "ms",
     "expected_contains": ["A-05"],
     "expected_intent": "parking"
   },
@@ -72,7 +72,7 @@
     "unit": "22-08",
     "state": "BOOKED",
     "question": "Berapa nombor kod untuk masuk ke dalam unit?",
-    "language": "my",
+    "language": "ms",
     "expected_contains": ["3344"],
     "expected_intent": "checkin"
   },
@@ -94,7 +94,7 @@
     "unit": "5-01",
     "state": "BOOKED",
     "question": "Pukul berapa masa daftar keluar?",
-    "language": "my",
+    "language": "ms",
     "expected_contains": ["12:00"],
     "expected_intent": "checkout"
   },
@@ -193,7 +193,7 @@
     "unit": null,
     "state": "UNKNOWN",
     "question": "Helo, saya ingin bertanya tentang penginapan di sini.",
-    "language": "my",
+    "language": "ms",
     "expected_contains": [],
     "expected_intent": "greeting"
   },

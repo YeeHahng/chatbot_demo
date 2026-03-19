@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Literal
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from app.config import settings
 from app.models import WebhookMessage, EvalLog
 from app.session import get_lock, get_session, update_session, add_to_history
@@ -24,9 +26,23 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="SkyView Property Bot", lifespan=lifespan)
 
 
+class SeedRequest(BaseModel):
+    phone: str
+    building: str | None = None
+    unit: str | None = None
+    state: Literal["UNKNOWN", "PRE_BOOKING", "BOOKED"] = "UNKNOWN"
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": settings.model}
+
+
+@app.post("/seed")
+async def seed_session(req: SeedRequest):
+    """Pre-seed a session with known building/unit/state. Used by benchmark.py."""
+    update_session(req.phone, building=req.building, unit=req.unit, state=req.state)
+    return {"seeded": req.phone, "building": req.building, "unit": req.unit, "state": req.state}
 
 
 @app.post("/webhook")

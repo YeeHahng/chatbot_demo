@@ -54,9 +54,6 @@ def add_to_history(phone: str, role: str, content: str) -> None:
     Trim history to last max_history_turns*2 entries (user+assistant pairs).
     """
     session = get_session(phone)
-    session.history.append({"role": role, "content": content})
-
-    # Trim to keep only last max_history_turns * 2 entries
     max_entries = settings.max_history_turns * 2
-    if len(session.history) > max_entries:
-        session.history = session.history[-max_entries:]
+    new_history = (session.history + [{"role": role, "content": content}])[-max_entries:]
+    _sessions[phone] = session.model_copy(update={"history": new_history})
