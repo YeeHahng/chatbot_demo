@@ -1,0 +1,75 @@
+{
+  "general": {
+    "pet_policy": "No pets allowed.",
+    "checkout_time": "12:00 PM",
+    "checkin_time": "3:00 PM",
+    "late_checkout_policy": "Late checkout subject to availability, RM50/hour fee applies. Please request by 10am on checkout day.",
+    "early_checkin_policy": "Early check-in from 12pm subject to availability, RM50 fee applies.",
+    "noise_policy": "Quiet hours from 11pm to 8am. Please be considerate of neighbours.",
+    "visitor_policy": "Registered guests only. No unregistered overnight visitors."
+  },
+  "buildings": {
+    "tower_a": {
+      "name": "Tower A",
+      "address": "123 Jalan Bukit Bintang, 55100 Kuala Lumpur",
+      "amenities": ["infinity pool (level 35)", "gym (level 34)", "covered parking", "24h security", "high-speed WiFi lobby"],
+      "lift_access": "Use the left bank lifts for floors 2-20. Tap your access card on the reader.",
+      "units": {
+        "3-05": {
+          "room_type": "3-bedroom",
+          "max_pax": 8,
+          "price_per_night": 350,
+          "wifi_ssid": "SkyView-A305",
+          "wifi_password": "sky@2024",
+          "parking_bay": "B-12",
+          "checkin_code": "4521#",
+          "floor": 3,
+          "extra_beds_available": true,
+          "extra_bed_fee": "RM50 per bed per night"
+        },
+        "18-02": {
+          "room_type": "studio",
+          "max_pax": 2,
+          "price_per_night": 180,
+          "wifi_ssid": "SkyView-A1802",
+          "wifi_password": "view#1802",
+          "parking_bay": "A-05",
+          "checkin_code": "7823#",
+          "floor": 18,
+          "extra_beds_available": false
+        }
+      }
+    },
+    "tower_b": {
+      "name": "Tower B",
+      "address": "456 Jalan Ampang, 50450 Kuala Lumpur",
+      "amenities": ["rooftop pool (level 40)", "co-working lounge (level 3)", "covered parking", "24h security", "concierge"],
+      "lift_access": "All lifts serve all floors. Present your keycard to the security desk on arrival.",
+      "units": {
+        "5-01": {
+          "room_type": "2-bedroom",
+          "max_pax": 5,
+          "price_per_night": 280,
+          "wifi_ssid": "SkyView-B501",
+          "wifi_password": "amp@5566",
+          "parking_bay": "C-03",
+          "checkin_code": "9910#",
+          "floor": 5,
+          "extra_beds_available": true,
+          "extra_bed_fee": "RM50 per bed per night"
+        },
+        "22-08": {
+          "room_type": "studio",
+          "max_pax": 2,
+          "price_per_night": 150,
+          "wifi_ssid": "SkyView-B2208",
+          "wifi_password": "sky#2208",
+          "parking_bay": "D-11",
+          "checkin_code": "3344#",
+          "floor": 22,
+          "extra_beds_available": false
+        }
+      }
+    }
+  }
+}
