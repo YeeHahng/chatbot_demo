@@ -76,11 +76,20 @@ async def query_narrative(
             query_embeddings=[embedding],
             n_results=n_results,
             where=where_filter,
-            include=["documents"],
+            include=["documents", "distances"],
         )
     )
 
-    # Return documents list or empty list
-    if results["documents"]:
-        return results["documents"][0]
-    return []
+    docs = results.get("documents", [[]])[0]
+    distances = results.get("distances", [[]])[0]
+
+    if not docs:
+        return []
+
+    # Filter by similarity threshold, sort by ascending distance (best first)
+    threshold = settings.similarity_threshold
+    paired = [(doc, dist) for doc, dist in zip(docs, distances) if dist <= threshold]
+    paired.sort(key=lambda x: x[1])
+
+    # Annotate each chunk with its relevance score for the LLM
+    return [f"[relevance: {1 - dist:.2f}] {doc}" for doc, dist in paired]

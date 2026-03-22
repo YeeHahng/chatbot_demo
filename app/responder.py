@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.models import ConversationState, LLMResponse, RetrievedContext
-from app.lookup import get_general, get_building, get_unit
+from app.lookup import get_general, get_building, get_unit, get_all_units_public, PUBLIC_UNIT_FIELDS
 from app.search import query_narrative
 from app.llm import call_llm
 
@@ -21,7 +21,7 @@ def _load_system_prompt() -> str:
     return prompt_path.read_text(encoding="utf-8")
 
 
-def _build_context_block(context: RetrievedContext) -> str:
+def _build_context_block(context: RetrievedContext, guest_state: str = "UNKNOWN") -> str:
     """Format retrieved context into a readable string block for injection into the prompt."""
     parts = []
 
@@ -39,9 +39,23 @@ def _build_context_block(context: RetrievedContext) -> str:
 
     if context.unit:
         lines = ["[UNIT DETAILS]"]
-        for key, value in context.unit.items():
+        unit_fields = context.unit if guest_state == "BOOKED" else {
+            k: v for k, v in context.unit.items() if k in PUBLIC_UNIT_FIELDS
+        }
+        for key, value in unit_fields.items():
             lines.append(f"{key}: {value}")
         parts.append("\n".join(lines))
+    else:
+        all_units = get_all_units_public()
+        if all_units:
+            lines = ["[ALL UNITS OVERVIEW]"]
+            for u in all_units:
+                lines.append(
+                    f"- {u['suite_name']} (unit {u['unit_id']}, {u['building_id']}): "
+                    f"floor {u['floor']}, {u['room_type']}, up to {u['max_pax']} guests, "
+                    f"RM{u['price_per_night']}/night — {u['description']}"
+                )
+            parts.append("\n".join(lines))
 
     if context.narrative_chunks:
         lines = ["[RELEVANT DOCUMENTS]"]
@@ -108,13 +122,17 @@ async def generate_response(
         _system_prompt = _load_system_prompt()
 
     # Step 4: Build context block and history text
-    context_block = _build_context_block(context)
+    context_block = _build_context_block(context, guest_state=session.state)
     history_text = _build_history_text(session.history)
 
     # Step 5: Fill prompt template
-    filled_prompt = _system_prompt.format(
-        context_block=context_block,
-        history=history_text,
+    # Use .replace() instead of .format() — the system prompt contains JSON
+    # examples with {curly braces} that str.format() would misinterpret as
+    # template variables, causing KeyError.
+    filled_prompt = (
+        _system_prompt
+        .replace("{context_block}", context_block)
+        .replace("{history}", history_text)
     )
 
     # Step 6: Call LLM

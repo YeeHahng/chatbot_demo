@@ -13,8 +13,10 @@ class Settings(BaseSettings):
     openrouter_api_key: str
     model: str = "deepseek/deepseek-chat"
     chroma_path: str = "./data/chroma"
-    embedding_model: str = "paraphrase-multilingual-mpnet-base-v2"
+    embedding_model: str = "BAAI/bge-m3"
     top_k_chunks: int = 3
+    similarity_threshold: float = 1.0   # L2 distance cutoff; lower = stricter
+    chunk_overlap: int = 1              # paragraphs to overlap between chunks
     max_history_turns: int = 6
     prompt_version: str = "v1"
 

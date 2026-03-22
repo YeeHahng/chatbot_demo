@@ -6,7 +6,8 @@
     "late_checkout_policy": "Late checkout subject to availability, RM50/hour fee applies. Please request by 10am on checkout day.",
     "early_checkin_policy": "Early check-in from 12pm subject to availability, RM50 fee applies.",
     "noise_policy": "Quiet hours from 11pm to 8am. Please be considerate of neighbours.",
-    "visitor_policy": "Registered guests only. No unregistered overnight visitors."
+    "visitor_policy": "Registered guests only. No unregistered overnight visitors.",
+    "suite_directory": "Luxe Family Suite = building:tower_a unit:3-05 | City View Studio = building:tower_a unit:18-02 | Pool View Suite = building:tower_b unit:5-01 | Skyline Studio = building:tower_b unit:22-08"
   },
   "buildings": {
     "tower_a": {
@@ -16,6 +17,8 @@
       "lift_access": "Use the left bank lifts for floors 2-20. Tap your access card on the reader.",
       "units": {
         "3-05": {
+          "suite_name": "Luxe Family Suite",
+          "description": "Spacious 3-bedroom suite on floor 3, perfect for large families or groups of up to 8. Features a fully equipped kitchen, separate living and dining area, and a private balcony.",
           "room_type": "3-bedroom",
           "max_pax": 8,
           "price_per_night": 350,
@@ -28,6 +31,8 @@
           "extra_bed_fee": "RM50 per bed per night"
         },
         "18-02": {
+          "suite_name": "City View Studio",
+          "description": "Cosy studio on floor 18 with sweeping city views. Ideal for solo travellers or couples. Features a king bed, kitchenette, and floor-to-ceiling windows.",
           "room_type": "studio",
           "max_pax": 2,
           "price_per_night": 180,
@@ -47,6 +52,8 @@
       "lift_access": "All lifts serve all floors. Present your keycard to the security desk on arrival.",
       "units": {
         "5-01": {
+          "suite_name": "Pool View Suite",
+          "description": "Bright 2-bedroom suite on floor 5 with direct views of Tower B's rooftop infinity pool. Comfortably sleeps up to 5. Features a master bedroom, second bedroom with twin beds, and a balcony.",
           "room_type": "2-bedroom",
           "max_pax": 5,
           "price_per_night": 280,
@@ -59,6 +66,8 @@
           "extra_bed_fee": "RM50 per bed per night"
         },
         "22-08": {
+          "suite_name": "Skyline Studio",
+          "description": "Stylish studio on the high floor 22 of Tower B with panoramic KL skyline views. Perfect for solo travellers or couples. Features a queen bed, modern kitchenette, and smart TV.",
           "room_type": "studio",
           "max_pax": 2,
           "price_per_night": 150,

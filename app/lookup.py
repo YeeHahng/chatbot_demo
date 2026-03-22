@@ -46,3 +46,22 @@ def get_units_for_building(building_id: str) -> list[str]:
         return []
 
     return list(buildings[building_id].get("units", {}).keys())
+
+
+PUBLIC_UNIT_FIELDS = {
+    "suite_name", "description", "room_type",
+    "max_pax", "price_per_night", "floor",
+    "extra_beds_available", "extra_bed_fee",
+}
+
+
+def get_all_units_public() -> list[dict]:
+    """Return public fields for every unit across all buildings."""
+    units = []
+    for building_id, building in _data.get("buildings", {}).items():
+        for unit_id, unit in building.get("units", {}).items():
+            entry = {k: v for k, v in unit.items() if k in PUBLIC_UNIT_FIELDS}
+            entry["building_id"] = building_id
+            entry["unit_id"] = unit_id
+            units.append(entry)
+    return units

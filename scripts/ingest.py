@@ -55,13 +55,18 @@ def main():
 
         # Step 5: Split by paragraph chunks and filter
         paragraphs = content.split("\n\n")
-        file_chunks = []
+        filtered_paragraphs = [p.strip() for p in paragraphs if len(p.strip()) >= 30]
 
-        for chunk in paragraphs:
-            chunk = chunk.strip()
-            # Filter out chunks with fewer than 30 characters
-            if len(chunk) >= 30:
-                file_chunks.append(chunk)
+        # Build overlapping chunks using a look-back sliding window
+        overlap = settings.chunk_overlap
+        file_chunks = []
+        if overlap == 0:
+            file_chunks = filtered_paragraphs
+        else:
+            for i in range(len(filtered_paragraphs)):
+                start = max(0, i - overlap)
+                combined = "\n\n".join(filtered_paragraphs[start : i + 1])
+                file_chunks.append(combined)
 
         # Store chunks and metadata for this file
         chunk_index = 0
@@ -71,7 +76,8 @@ def main():
                 "id": f"{doc_type}_{chunk_index}",
                 "doc_type": doc_type,
                 "chunk_index": chunk_index,
-                "building_id": "general"
+                "building_id": "general",
+                "overlap": overlap,
             })
             chunk_index += 1
 
