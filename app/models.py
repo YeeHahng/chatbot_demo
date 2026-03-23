@@ -8,6 +8,7 @@ class ConversationState(BaseModel):
     unit: str | None = None
     language: str = "en"
     history: list[dict] = []
+    booking_id: str | None = None
 
 class LLMResponse(BaseModel):
     intent: str
@@ -40,6 +41,7 @@ class EvalLog(BaseModel):
     latency_ms: int
     input_tokens: int
     output_tokens: int
+    booking_id: str | None = None
 
 class WebhookMessage(BaseModel):
     phone: str

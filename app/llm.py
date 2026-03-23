@@ -6,11 +6,13 @@ from app.config import settings
 async def call_llm(
     system_prompt: str,
     user_message: str,
+    history: list[dict] | None = None,
     model: str | None = None,
 ) -> tuple[str, int, int]:
     """
     Call OpenRouter chat completions API.
 
+    history: list of {"role": "user"/"assistant", "content": "..."} from prior turns.
     Returns: (response_text, input_tokens, output_tokens)
     Raises: httpx.HTTPStatusError on non-2xx responses
     """
@@ -23,12 +25,14 @@ async def call_llm(
         "X-Title": "SkyView Property Bot",
     }
 
+    messages = [{"role": "system", "content": system_prompt}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": user_message})
+
     body = {
         "model": model or settings.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
+        "messages": messages,
         "response_format": {"type": "json_object"},
     }
 

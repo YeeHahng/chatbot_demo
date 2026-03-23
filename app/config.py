@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     chunk_overlap: int = 1              # paragraphs to overlap between chunks
     max_history_turns: int = 6
     prompt_version: str = "v1"
+    postgres_dsn: str = "postgresql://user:password@localhost:5432/skyview"
+    log_to_file: bool = False
 
 
 settings = Settings()

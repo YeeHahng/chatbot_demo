@@ -1,31 +1,38 @@
 import asyncio
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from app.models import EvalLog
+from app.config import settings
 
 
 async def log_interaction(log: EvalLog) -> None:
     """
-    Append one JSON line to eval/logs/<model_safe_name>.jsonl
-
-    Model name sanitization: replace "/" and ":" with "_"
-    Example: "deepseek/deepseek-chat" -> "deepseek_deepseek-chat.jsonl"
+    Log interaction to PostgreSQL interaction_logs table.
+    Optionally also writes to JSONL file if settings.log_to_file is True.
     """
-    # Sanitize model name: replace "/" and ":" with "_"
+    # Primary: DB log
+    try:
+        from app.db import log_interaction_db
+        await log_interaction_db(log.model_dump(), booking_id=log.booking_id)
+    except Exception as e:
+        # Don't let logging failure break the request — fallback to file
+        print(f"[logger] DB log failed: {e} — falling back to file")
+        await _write_jsonl(log)
+        return
+
+    # Optional secondary: JSONL file (for local dev / debugging)
+    if settings.log_to_file:
+        await _write_jsonl(log)
+
+
+async def _write_jsonl(log: EvalLog) -> None:
+    """Append one JSON line to eval/logs/<model_safe_name>.jsonl."""
     safe_model_name = log.model.replace("/", "_").replace(":", "_")
-
-    # Create log directory path
     log_dir = Path(__file__).parent.parent / "eval" / "logs"
-
-    # Create directory if it doesn't exist
     log_dir.mkdir(parents=True, exist_ok=True)
-
-    # Construct file path
     file_path = log_dir / f"{safe_model_name}.jsonl"
 
-    # Write the log as JSON line using asyncio.to_thread
     def write_log():
         with open(file_path, "a") as f:
             f.write(json.dumps(log.model_dump()) + "\n")

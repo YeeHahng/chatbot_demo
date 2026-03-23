@@ -2,8 +2,7 @@ import asyncio
 from app.models import ConversationState
 from app.config import settings
 
-# Module-level storage
-_sessions: dict[str, ConversationState] = {}
+# Per-phone asyncio locks for in-process concurrency safety
 _locks: dict[str, asyncio.Lock] = {}
 
 
@@ -15,45 +14,105 @@ def get_lock(phone: str) -> asyncio.Lock:
 
 
 def get_session(phone: str) -> ConversationState:
-    """Get existing session or create new UNKNOWN state."""
-    if phone not in _sessions:
-        _sessions[phone] = ConversationState(phone=phone)
-    return _sessions[phone]
+    """
+    Fetch session from DB synchronously (via asyncio.run).
+    Falls back to a fresh UNKNOWN state if no session exists.
+    Used by sync callers (e.g. Streamlit).
+    """
+    import asyncio as _asyncio
+    try:
+        loop = _asyncio.get_event_loop()
+        if loop.is_running():
+            # Already inside an async context — caller should use get_session_async
+            from app.db import get_session_db
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(_asyncio.run, get_session_db(phone))
+                row = future.result()
+        else:
+            from app.db import get_session_db
+            row = loop.run_until_complete(get_session_db(phone))
+    except Exception:
+        row = None
+
+    if row is None:
+        return ConversationState(phone=phone)
+    return ConversationState(
+        phone=row["phone"],
+        state=row["state"],
+        building=row.get("building"),
+        unit=row.get("unit"),
+        language=row.get("language", "en"),
+        history=row.get("history", []),
+        booking_id=row.get("booking_id"),
+    )
+
+
+async def get_session_async(phone: str) -> ConversationState:
+    """Async version — preferred inside FastAPI request handlers."""
+    from app.db import get_session_db
+    row = await get_session_db(phone)
+    if row is None:
+        return ConversationState(phone=phone)
+    return ConversationState(
+        phone=row["phone"],
+        state=row["state"],
+        building=row.get("building"),
+        unit=row.get("unit"),
+        language=row.get("language", "en"),
+        history=row.get("history", []),
+        booking_id=row.get("booking_id"),
+    )
+
+
+async def update_session_async(phone: str, **kwargs) -> ConversationState:
+    """
+    Persist session fields to DB. Skips None values for building/unit.
+    Returns the refreshed ConversationState.
+    """
+    from app.db import upsert_session_db
+    max_entries = settings.max_history_turns * 2
+    await upsert_session_db(phone, max_history_entries=max_entries, **kwargs)
+    return await get_session_async(phone)
 
 
 def update_session(phone: str, **kwargs) -> ConversationState:
     """
-    Update fields on a session. Returns updated session.
-    Only updates fields that are provided (skip None values for
-    building/unit to avoid overwriting known values with null).
+    Sync wrapper around update_session_async.
+    Used by Streamlit / non-async callers.
     """
-    session = get_session(phone)
-
-    # Build update dict, handling building and unit specially
-    update_dict = {}
-    for key, value in kwargs.items():
-        if key in ("building", "unit"):
-            # Only update if value is not None
-            if value is not None:
-                update_dict[key] = value
+    import asyncio as _asyncio
+    try:
+        loop = _asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(_asyncio.run, update_session_async(phone, **kwargs))
+                return future.result()
         else:
-            # Always update for other fields
-            update_dict[key] = value
+            return loop.run_until_complete(update_session_async(phone, **kwargs))
+    except Exception:
+        return ConversationState(phone=phone)
 
-    # Use model_copy with update if there are changes
-    if update_dict:
-        session = session.model_copy(update=update_dict)
-        _sessions[phone] = session
 
-    return session
+async def add_to_history_async(phone: str, role: str, content: str) -> None:
+    """Async: append one history entry to the DB session."""
+    from app.db import append_history_db
+    max_entries = settings.max_history_turns * 2
+    await append_history_db(phone, role, content, max_history_entries=max_entries)
 
 
 def add_to_history(phone: str, role: str, content: str) -> None:
-    """
-    Append {"role": role, "content": content} to session history.
-    Trim history to last max_history_turns*2 entries (user+assistant pairs).
-    """
-    session = get_session(phone)
-    max_entries = settings.max_history_turns * 2
-    new_history = (session.history + [{"role": role, "content": content}])[-max_entries:]
-    _sessions[phone] = session.model_copy(update={"history": new_history})
+    """Sync wrapper around add_to_history_async."""
+    import asyncio as _asyncio
+    try:
+        loop = _asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(_asyncio.run, add_to_history_async(phone, role, content))
+                future.result()
+        else:
+            loop.run_until_complete(add_to_history_async(phone, role, content))
+    except Exception:
+        pass

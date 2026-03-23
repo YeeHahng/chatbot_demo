@@ -9,3 +9,4 @@ pydantic-settings==2.4.0
 aiofiles==24.1.0
 numpy>=2.0.0
 streamlit>=1.35.0
+asyncpg>=0.30.0

@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import streamlit as st
 from app.config import settings
 from app.search import init_search
-from app.session import get_session, update_session, add_to_history, _sessions
+from app.models import ConversationState
 from app.responder import generate_response
 
 # ── Page config (must be first Streamlit call) ──────────────────────────────
@@ -35,7 +35,7 @@ DEFAULT_PHONE = "+60100000999"
 def load_search():
     """Load embedding model and ChromaDB once for the lifetime of the process."""
     init_search()
-    return True  # sentinel so cache_resource has something to store
+    return True
 
 
 load_search()
@@ -55,53 +55,86 @@ def init_session_state():
         st.session_state.building_seed = ""
     if "unit_seed" not in st.session_state:
         st.session_state.unit_seed = ""
+    # Session fields tracked in UI state (no DB reads needed)
+    if "guest_state" not in st.session_state:
+        st.session_state.guest_state = "UNKNOWN"
+    if "building" not in st.session_state:
+        st.session_state.building = None
+    if "unit" not in st.session_state:
+        st.session_state.unit = None
+    if "language" not in st.session_state:
+        st.session_state.language = "en"
+    if "booking_id" not in st.session_state:
+        st.session_state.booking_id = None
 
 
 init_session_state()
 
 
-# ── Apply pre-seed on fresh session ──────────────────────────────────────────
-def apply_preseed():
-    building = st.session_state.building_seed or None
-    unit = st.session_state.unit_seed or None
-    if (building or unit) and not st.session_state.messages:
-        state = "BOOKED" if (building and unit) else "PRE_BOOKING"
-        update_session(st.session_state.phone, building=building, unit=unit, state=state)
-
-
-apply_preseed()
+def _build_session() -> ConversationState:
+    """Build ConversationState from UI state — no DB round-trip needed."""
+    history = [
+        {"role": msg["role"], "content": msg["content"]}
+        for msg in st.session_state.messages
+        if msg["role"] in ("user", "assistant")
+    ]
+    return ConversationState(
+        phone=st.session_state.phone,
+        state=st.session_state.guest_state,
+        building=st.session_state.building,
+        unit=st.session_state.unit,
+        language=st.session_state.language,
+        history=history,
+        booking_id=st.session_state.booking_id,
+    )
 
 
 # ── Pipeline helper ──────────────────────────────────────────────────────────
 def send_message(user_text: str) -> dict:
-    """Run the full pipeline. Returns response dict with stats."""
+    """Run the full pipeline. All async work in one asyncio.run() call."""
     phone = st.session_state.phone
-    session = get_session(phone)
+    session = _build_session()
 
-    # asyncio.run() is safe here — Streamlit runs in a sync thread context
-    # Do NOT use get_lock() — asyncio.Lock is bound to a specific event loop
-    llm_response, input_tokens, output_tokens, latency_ms = asyncio.run(
-        generate_response(phone=phone, message=user_text, session=session)
-    )
+    async def _run():
+        llm_response, input_tokens, output_tokens, latency_ms = await generate_response(
+            phone=phone, message=user_text, session=session
+        )
 
-    # Update session (mirrors chat.py lines 122-130)
-    update_session(
-        phone,
-        building=llm_response.building_extracted,
-        unit=llm_response.unit_extracted,
-        language=llm_response.language,
-        state=(
-            "BOOKED"
-            if (session.building or llm_response.building_extracted)
-            and (session.unit or llm_response.unit_extracted)
-            else session.state
-        ),
-    )
-    add_to_history(phone, "user", user_text)
-    add_to_history(phone, "assistant", llm_response.response)
+        building_final = session.building or llm_response.building_extracted
+        unit_final = session.unit or llm_response.unit_extracted
+        new_state = "BOOKED" if (building_final and unit_final) else session.state
+
+        booking_id = session.booking_id
+        final_reply = llm_response.response
+
+        if new_state == "BOOKED" and session.state != "BOOKED":
+            # Create booking with its own fresh DB pool inside this same event loop
+            from app.db import init_db_pool, close_db_pool, create_booking
+            await init_db_pool()
+            try:
+                booking_uuid = await create_booking(phone, building_final, unit_final)
+                booking_id = str(booking_uuid)
+                short_ref = f"BK-{booking_id.replace('-', '').upper()[:8]}"
+                final_reply = llm_response.response + f"\n\n📋 Booking reference: **{short_ref}**"
+            finally:
+                await close_db_pool()
+
+        return llm_response, input_tokens, output_tokens, latency_ms, new_state, booking_id, final_reply, building_final, unit_final
+
+    llm_response, input_tokens, output_tokens, latency_ms, new_state, booking_id, final_reply, building_final, unit_final = asyncio.run(_run())
+
+    # Update UI session state
+    if llm_response.building_extracted:
+        st.session_state.building = llm_response.building_extracted
+    if llm_response.unit_extracted:
+        st.session_state.unit = llm_response.unit_extracted
+    st.session_state.guest_state = new_state
+    st.session_state.language = llm_response.language
+    if booking_id:
+        st.session_state.booking_id = booking_id
 
     return {
-        "response": llm_response.response,
+        "response": final_reply,
         "intent": llm_response.intent,
         "language": llm_response.language,
         "latency_ms": latency_ms,
@@ -112,21 +145,18 @@ def send_message(user_text: str) -> dict:
 
 # ── Reset helper ─────────────────────────────────────────────────────────────
 def reset_session():
-    """Clear backend session store and UI state, optionally re-seed."""
-    phone = st.session_state.phone
-    # Clear backend session (mirrors chat.py /reset pattern)
-    if phone in _sessions:
-        del _sessions[phone]
-    # Re-seed if building/unit configured
-    building = st.session_state.building_seed or None
-    unit = st.session_state.unit_seed or None
-    if building or unit:
-        state = "BOOKED" if (building and unit) else "PRE_BOOKING"
-        update_session(phone, building=building, unit=unit, state=state)
-    # Clear UI state
+    """Clear UI session state and optionally apply pre-seed."""
     st.session_state.messages = []
     st.session_state.total_input_tokens = 0
     st.session_state.total_output_tokens = 0
+    st.session_state.booking_id = None
+
+    building = st.session_state.building_seed or None
+    unit = st.session_state.unit_seed or None
+    st.session_state.building = building
+    st.session_state.unit = unit
+    st.session_state.guest_state = "BOOKED" if (building and unit) else ("PRE_BOOKING" if (building or unit) else "UNKNOWN")
+    st.session_state.language = "en"
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -150,15 +180,14 @@ with st.sidebar:
 
     st.divider()
 
-    # Live session state from backend
+    # Live session state from UI state
     st.subheader("Current Session State")
-    current_session = get_session(st.session_state.phone)
-    st.markdown(f"**Phone:** `{current_session.phone}`")
-    st.markdown(f"**State:** `{current_session.state}`")
-    st.markdown(f"**Building:** `{current_session.building or '—'}`")
-    st.markdown(f"**Unit:** `{current_session.unit or '—'}`")
-    st.markdown(f"**Language:** `{current_session.language}`")
-    st.markdown(f"**History turns:** {len(current_session.history) // 2}")
+    st.markdown(f"**Phone:** `{st.session_state.phone}`")
+    st.markdown(f"**State:** `{st.session_state.guest_state}`")
+    st.markdown(f"**Building:** `{st.session_state.building or '—'}`")
+    st.markdown(f"**Unit:** `{st.session_state.unit or '—'}`")
+    st.markdown(f"**Language:** `{st.session_state.language}`")
+    st.markdown(f"**History turns:** {len(st.session_state.messages) // 2}")
 
     st.divider()
 

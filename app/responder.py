@@ -21,9 +21,13 @@ def _load_system_prompt() -> str:
     return prompt_path.read_text(encoding="utf-8")
 
 
-def _build_context_block(context: RetrievedContext, guest_state: str = "UNKNOWN") -> str:
+def _build_context_block(context: RetrievedContext, guest_state: str = "UNKNOWN", booking_id: str | None = None) -> str:
     """Format retrieved context into a readable string block for injection into the prompt."""
     parts = []
+
+    if booking_id and guest_state == "BOOKED":
+        short_ref = f"BK-{booking_id.replace('-', '').upper()[:8]}"
+        parts.append(f"[BOOKING REFERENCE]\nbooking_id: {short_ref}")
 
     if context.general:
         lines = ["[GENERAL POLICIES]"]
@@ -68,24 +72,6 @@ def _build_context_block(context: RetrievedContext, guest_state: str = "UNKNOWN"
     return "\n\n".join(parts)
 
 
-def _build_history_text(history: list[dict]) -> str:
-    """Format conversation history list into readable text."""
-    if not history:
-        return "No previous conversation."
-
-    lines = []
-    for entry in history:
-        role = entry.get("role", "")
-        content = entry.get("content", "")
-        if role == "user":
-            lines.append(f"Guest: {content}")
-        elif role == "assistant":
-            lines.append(f"Assistant: {content}")
-        else:
-            lines.append(f"{role.capitalize()}: {content}")
-
-    return "\n".join(lines)
-
 
 async def generate_response(
     phone: str,
@@ -121,24 +107,20 @@ async def generate_response(
     if _system_prompt is None:
         _system_prompt = _load_system_prompt()
 
-    # Step 4: Build context block and history text
-    context_block = _build_context_block(context, guest_state=session.state)
-    history_text = _build_history_text(session.history)
+    # Step 4: Build context block
+    context_block = _build_context_block(context, guest_state=session.state, booking_id=session.booking_id)
 
     # Step 5: Fill prompt template
     # Use .replace() instead of .format() — the system prompt contains JSON
     # examples with {curly braces} that str.format() would misinterpret as
     # template variables, causing KeyError.
-    filled_prompt = (
-        _system_prompt
-        .replace("{context_block}", context_block)
-        .replace("{history}", history_text)
-    )
+    filled_prompt = _system_prompt.replace("{context_block}", context_block)
 
-    # Step 6: Call LLM
+    # Step 6: Call LLM with history as native messages array
     response_text, input_tokens, output_tokens = await call_llm(
         system_prompt=filled_prompt,
         user_message=message,
+        history=session.history or None,
     )
 
     # Step 7: Parse JSON response into LLMResponse
